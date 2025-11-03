@@ -1,9 +1,0 @@
-services:
-  - type: static
-    name: my-vite-app
-    buildCommand: npm run build
-    publishDir: dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
