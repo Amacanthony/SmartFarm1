@@ -6,6 +6,8 @@ import 'leaflet/dist/leaflet.css';
 import '@geoman-io/leaflet-geoman-free';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 import { MapPin, Navigation, Clock, Edit2, Save, X, Download } from "lucide-react";
+import { useSensorData } from '@/hooks/useSensorData';
+import CattleDetailModal from '@/components/CattleDetailModal';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -21,205 +23,6 @@ try {
 } catch (error) {
   console.warn('Leaflet icon configuration failed:', error);
 }
-
-// Mock sensor data hook to replace the missing one
-const useSensorData = () => {
-  const [gpsData, setGpsData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      // Mock GPS data for demonstration
-      const mockData = [
-        { 
-          node_id: 5, 
-          latitude: 8.97000, 
-          longitude: 7.39000, 
-          timestamp: Date.now() / 1000, 
-          speed: 0.1 
-        },
-        { 
-          node_id: 6, 
-          latitude: 8.97020, 
-          longitude: 7.39020, 
-          timestamp: Date.now() / 1000, 
-          speed: 0.3 
-        },
-        { 
-          node_id: 8, 
-          latitude: 8.96980, 
-          longitude: 7.38980, 
-          timestamp: Date.now() / 1000, 
-          speed: 0 
-        },
-        { 
-          node_id: 9, 
-          latitude: 8.97010, 
-          longitude: 7.39010, 
-          timestamp: Date.now() / 1000, 
-          speed: 0.2 
-        },
-      ];
-      setGpsData(mockData);
-      setLoading(false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  const isNodeOnline = (nodeId: number) => {
-    return gpsData.some(g => g?.node_id === nodeId);
-  };
-
-  return { gpsData, loading, isNodeOnline };
-};
-
-// Cattle Detail Modal Component
-const CattleDetailModal = ({ 
-  isOpen, 
-  onClose, 
-  cattle, 
-  onSave 
-}: { 
-  isOpen: boolean;
-  onClose: () => void;
-  cattle: any;
-  onSave: (details: any) => void;
-}) => {
-  const [formData, setFormData] = useState({
-    weight: '',
-    weightUnit: 'kg',
-    color: '',
-    lastCheckup: '',
-    healthStatus: 'good',
-    notes: ''
-  });
-
-  useEffect(() => {
-    if (isOpen) {
-      setFormData({
-        weight: '',
-        weightUnit: 'kg',
-        color: '',
-        lastCheckup: '',
-        healthStatus: 'good',
-        notes: ''
-      });
-    }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave({
-      ...formData,
-      weight: formData.weight ? parseFloat(formData.weight) : undefined
-    });
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <h2 className="text-xl font-bold text-farm-dark-green mb-4">
-            Edit {cattle.name} Details
-          </h2>
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Weight</label>
-                <input
-                  type="number"
-                  value={formData.weight}
-                  onChange={(e) => setFormData(prev => ({ ...prev, weight: e.target.value }))}
-                  className="w-full p-2 border rounded"
-                  step="0.1"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Unit</label>
-                <select
-                  value={formData.weightUnit}
-                  onChange={(e) => setFormData(prev => ({ ...prev, weightUnit: e.target.value }))}
-                  className="w-full p-2 border rounded"
-                >
-                  <option value="kg">kg</option>
-                  <option value="lbs">lbs</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Color/Markings</label>
-              <input
-                type="text"
-                value={formData.color}
-                onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                className="w-full p-2 border rounded"
-                placeholder="e.g., Black and white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Last Checkup</label>
-              <input
-                type="date"
-                value={formData.lastCheckup}
-                onChange={(e) => setFormData(prev => ({ ...prev, lastCheckup: e.target.value }))}
-                className="w-full p-2 border rounded"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Health Status</label>
-              <select
-                value={formData.healthStatus}
-                onChange={(e) => setFormData(prev => ({ ...prev, healthStatus: e.target.value }))}
-                className="w-full p-2 border rounded"
-              >
-                <option value="excellent">Excellent</option>
-                <option value="good">Good</option>
-                <option value="fair">Fair</option>
-                <option value="poor">Poor</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Notes</label>
-              <textarea
-                value={formData.notes}
-                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                className="w-full p-2 border rounded"
-                rows={3}
-                placeholder="Any additional notes..."
-              />
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="flex-1 bg-farm-dark-green hover:bg-farm-medium-green"
-              >
-                Save Details
-              </Button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 interface CattleData {
   id: number;
@@ -329,7 +132,7 @@ const CattleTracker = () => {
     return null;
   };
 
-  // Create cattle data from GPS nodes
+  // Create cattle data from GPS nodes - FIXED: No state updates inside
   const createCattleData = useCallback((): CattleData[] => {
     try {
       const cattleNames = ['Bessie', 'Daisy', 'Moobert', 'Luna'];
@@ -344,9 +147,9 @@ const CattleTracker = () => {
           let lastUpdate = lastUpdateTimes[nodeId] || 'No recent data';
 
           // Always prefer current GPS timestamp if available
-          if (date) {
-            lastUpdate = date.toLocaleString();
-          }
+      if (date) {
+         lastUpdate = date.toLocaleString();
+        }
 
           return {
             id: nodeId,
@@ -363,9 +166,9 @@ const CattleTracker = () => {
         // Fallback data if GPS not available
         const fallbackPositions = [
           [8.97000, 7.39000],
-          [8.97020, 7.39020],
-          [8.96980, 7.38980],
-          [8.97010, 7.39010]
+          [8.97000, 7.39000],
+          [8.97000, 7.39000],
+          [8.97000, 7.39000]
         ];
 
         return {
@@ -387,7 +190,7 @@ const CattleTracker = () => {
 
   const cattleData = createCattleData();
 
-  // Update lastUpdateTimes when new data comes in
+  // Update lastUpdateTimes when new data comes in - FIXED: Proper time updating
   useEffect(() => {
     if (!gpsData || gpsData.length === 0) return;
 
@@ -418,8 +221,9 @@ const CattleTracker = () => {
       const updatedTimes = { ...lastUpdateTimes, ...newUpdateTimes };
       setLastUpdateTimes(updatedTimes);
       setLocalStorage(LAST_UPDATE_KEY, updatedTimes);
+      console.log('Updated lastUpdateTimes:', updatedTimes);
     }
-  }, [gpsData]);
+  }, [gpsData]); // Only run when gpsData changes
 
   // Colors for cattle markers
   const NODE_COLORS = [
@@ -529,27 +333,6 @@ const CattleTracker = () => {
     }
   }, [cattleData]);
 
-  const createGeofence = (map: L.Map) => {
-    try {
-      if (geofenceRef.current) {
-        map.removeLayer(geofenceRef.current);
-      }
-
-      const polygon = L.polygon(geofenceBounds as L.LatLngExpression[], {
-        color: 'hsl(140, 76%, 45%)',
-        fillColor: 'hsl(140, 76%, 45%)',
-        fillOpacity: 0.15,
-        weight: 4,
-        opacity: 0.9
-      }).addTo(map);
-
-      polygon.bindPopup('<div class="font-semibold text-farm-dark-green">Farm Geofence Boundary</div>');
-      geofenceRef.current = polygon;
-    } catch (error) {
-      console.error('Failed to create geofence:', error);
-    }
-  };
-
   // Update markers
   useEffect(() => {
     if (!mapInstanceRef.current) return;
@@ -612,6 +395,27 @@ const CattleTracker = () => {
     const interval = setInterval(updateMarkers, 15000);
     return () => clearInterval(interval);
   }, [cattleData, highlightedCattleId]);
+
+  const createGeofence = (map: L.Map) => {
+    try {
+      if (geofenceRef.current) {
+        map.removeLayer(geofenceRef.current);
+      }
+
+      const polygon = L.polygon(geofenceBounds as L.LatLngExpression[], {
+        color: 'hsl(140, 76%, 45%)',
+        fillColor: 'hsl(140, 76%, 45%)',
+        fillOpacity: 0.15,
+        weight: 4,
+        opacity: 0.9
+      }).addTo(map);
+
+      polygon.bindPopup('<div class="font-semibold text-farm-dark-green">Farm Geofence Boundary</div>');
+      geofenceRef.current = polygon;
+    } catch (error) {
+      console.error('Failed to create geofence:', error);
+    }
+  };
 
   const toggleGeofenceEdit = () => {
     if (!mapInstanceRef.current || !geofenceRef.current) return;
@@ -910,10 +714,12 @@ const CattleTracker = () => {
               {cattleData.length > 0 ? cattleData.map(cattle => (
                 <div 
                   key={cattle.id} 
-                  className="p-4 border-2 rounded-lg space-y-3 bg-card border-border cursor-pointer transition-all hover:opacity-80"
-                  onClick={() => handleCattleClick(cattle)}
+                  className="p-4 border-2 rounded-lg space-y-3 bg-card border-border"
                 >
-                  <div>
+                  <div 
+                    className="cursor-pointer transition-all hover:opacity-80"
+                    onClick={() => handleCattleClick(cattle)}
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span
@@ -937,4 +743,67 @@ const CattleTracker = () => {
                     ) : null}
                     
                     <div className="space-y-1 text-sm text-muted-foreground mt-3">
-                      <div
+                      <div className="flex items-center gap-1">
+                        <Navigation className="w-3 h-3" />
+                        <span>{cattle.lat.toFixed(6)}, {cattle.lng.toFixed(6)}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        <span className="font-medium">
+                          {cattle.lastUpdate && cattle.lastUpdate !== 'No recent data' 
+                            ? cattle.lastUpdate 
+                            : 'No recent data'}
+                        </span>
+                      </div>
+                      <div className={`text-xs font-medium ${isNodeOnline(cattle.nodeId) ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {isNodeOnline(cattle.nodeId) ? '🟢 GPS Online' : '🔴 GPS Offline'}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full mt-3"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleGoToLocation(cattle);
+                    }}
+                  >
+                    <MapPin className="w-4 h-4 mr-2" />
+                    Go to Location
+                  </Button>
+                </div>
+              )) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No cattle data available</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Button
+            className="w-full bg-farm-dark-green hover:bg-farm-medium-green transition-all shadow-md"
+            onClick={handleDownloadPDF}
+            disabled={isDownloading || Object.keys(cattleHistory).length === 0}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            {isDownloading ? 'Generating PDF...' : 'Download Cattle History PDF'}
+          </Button>
+        </div>
+      </div>
+
+      {/* Cattle Detail Modal */}
+      {selectedCattle && (
+        <CattleDetailModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          cattle={selectedCattle}
+          onSave={handleSaveDetails}
+        />
+      )}
+    </div>
+  );
+};
+
+export default CattleTracker;
