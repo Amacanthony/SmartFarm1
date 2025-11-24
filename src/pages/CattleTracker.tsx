@@ -84,10 +84,10 @@ const CattleTracker = () => {
   // Initialize persisted states
   const [geofenceBounds, setGeofenceBounds] = useState<number[][]>(() => {
     const defaultBounds = [
-      [8.968, 7.388],
-      [8.972, 7.388],
-      [8.972, 7.392],
-      [8.968, 7.392]
+      [8.966938, 7.394089],
+      [8.966938, 7.394089],
+      [8.964938, 7.392089],
+      [8.964938, 7.392089]
     ];
     return getLocalStorage(GEOFENCE_KEY, defaultBounds);
   });
